@@ -25,10 +25,6 @@ You can find an in depth tutorial on how to use MolDescriptor at [moldescriptor.
 5. Click on "Get Result" to compute and display the descriptors.
 6. (Optional) Upload a CSV file containing SMILES notations for batch processing or download your results as a CSV.
 
-## Contribute
-
-If you're interested in contributing to the development of MolDescriptor, please refer to our contribution guidelines or contact the maintainers.
-
 ## Dependencies
 - Backend: Flask
 - Chemistry Toolkit: RDKit

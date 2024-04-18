@@ -188,9 +188,9 @@ def feedback():
 def draw():
     return render_template('draw.html')
 
-@app.route('/docs')
-def docs():
-    return render_template('docs.html')
+#@app.route('/docs')
+#def docs():
+#    return render_template('docs.html')
 
 @app.route('/about')
 def about():

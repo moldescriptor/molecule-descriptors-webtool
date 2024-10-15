@@ -15,7 +15,7 @@ The goal of this project is to utilize RDKit to calculate descriptors and make t
 - CSV Support: Upload a CSV containing multiple molecules to get descriptors for all at once or download results in CSV format.
 
 ## How to use MolDescriptor
-You can find an in depth tutorial on how to use MolDescriptor at [moldescriptor.com/docs](https://moldescriptor.com/docs)
+You can find an in depth tutorial on how to use MolDescriptor [here.](https://moldescriptor.github.io/moldescriptor-docs/)
 
 ## Getting Started
 1. Visit the MolDescriptor [website](https://moldescriptor.com/).

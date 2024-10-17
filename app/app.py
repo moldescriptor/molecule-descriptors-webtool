@@ -7,83 +7,120 @@ import csv
 from rdkit.Chem.AtomPairs import Pairs, Sheridan, Torsions, Utils
 import re
 import inspect
-
 from io import BytesIO
 import base64
+import json
 import os
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # for 16 MB max-limit
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max-limit
+
+def load_descriptor_synonyms(file_name="descriptor_synonyms.csv"):
+    synonym_map = {}
+    descriptor_synonyms = {}
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    csv_path = os.path.join(base_dir, 'data', file_name)
+    
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Synonym CSV file not found at {csv_path}")
+    
+    with open(csv_path, 'r', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            descriptor = row['Descriptor'].strip()
+            synonyms = [row[f'Synonym {i}'].strip() for i in range(1, 6) if row.get(f'Synonym {i}')]
+            synonyms = [syn for syn in synonyms if syn]
+            if synonyms:
+                descriptor_synonyms[descriptor] = synonyms
+            for synonym in synonyms:
+                synonym_lower = synonym.lower()
+                synonym_map[synonym_lower] = descriptor
+            descriptor_lower = descriptor.lower()
+            synonym_map[descriptor_lower] = descriptor
+    return synonym_map, descriptor_synonyms
+
+synonym_map, descriptor_synonyms = load_descriptor_synonyms()
 
 @app.route('/')
 def index():
     all_descriptors = get_all_descriptors()
-    return render_template('index.html', all_descriptors=all_descriptors)
-
-
+    descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
+    
+    try:
+        json_descriptorsAndSynonyms = json.dumps(descriptorsAndSynonyms)
+    except TypeError as e:
+        print(f"Serialization error: {e}")
+        json_descriptorsAndSynonyms = '{}'
+    
+    return render_template('index.html', 
+                           all_descriptors=all_descriptors, 
+                           descriptorsAndSynonyms=json_descriptorsAndSynonyms)
 
 @app.context_processor
 def inject_defaults():
-    """
-    Inject default values into the template context.
-    Specifically, it sends the result_available variable as a default argument
-    to the template.
-    """
     return {'result_available': False}
-
 
 @app.route('/identify_molecule', methods=['POST'])
 def identify_molecule():
-    global_descriptors = get_all_descriptors()  # Renamed variable here
+    global_descriptors = get_all_descriptors()
     selected_options = request.form.getlist('displayOptions')
 
+    final_selected_options = []
+    for option in selected_options:
+        option_lower = option.lower()
+        if option_lower in synonym_map:
+            method_name = synonym_map[option_lower]
+            final_selected_options.append(method_name)
+        else:
+            final_selected_options.append(option)
 
-    # Get the checkbox state for excluding invalid SMILES
     exclude_invalid = request.form.get('excludeInvalid') == 'true'
 
     file = request.files.get('csvFile')
     if file and file.filename != '':
-        # Process the uploaded file
         if not file.filename.endswith('.csv'):
-            # Invalid file type
-            return render_template('index.html', error="Invalid file type! Please upload a .csv file.")
-
+            all_descriptors = get_all_descriptors()
+            descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
+            return render_template('index.html', 
+                                   error="Invalid file type! Please upload a .csv file.",
+                                   all_descriptors=global_descriptors,
+                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
         smiles_list = []
         csv_file = csv.reader(file.stream.read().decode("utf-8").splitlines())
         for row in csv_file:
-            smiles_list.append(row[0])
+            if row:
+                smiles_list.append(row[0])
     else:
-        # No file uploaded, proceed with the input field
         smiles_input = request.form.get('inputField', '')
         smiles_list = [s.strip() for s in re.split(r'[,.]', smiles_input) if s.strip() != '']
 
-    # Exclude invalid SMILES if checkbox is checked
     if exclude_invalid:
         smiles_list = [smiles for smiles in smiles_list if Chem.MolFromSmiles(smiles) is not None]
 
-    computed_descriptors = []  # Renamed variable here
+    computed_descriptors = []
     for smiles in smiles_list:
-        descriptors, img_str = compute_descriptors(smiles, selected_options)
-        computed_descriptors.append(descriptors)  # Renamed variable here
+        descriptors, img_str = compute_descriptors(smiles, final_selected_options)
+        computed_descriptors.append(descriptors)
 
-    
-    return render_template('index.html', descriptors_list=computed_descriptors, all_descriptors=global_descriptors, result_available=True) # note that we are passing the global_descriptors variable here
+    descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
 
+    return render_template('index.html', 
+                           descriptors_list=computed_descriptors, 
+                           all_descriptors=global_descriptors, 
+                           descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
+                           result_available=True)
+
+def build_descriptors_and_synonyms(descriptor_synonyms):
+    return descriptor_synonyms
 
 def generate_csv(data):
     output = StringIO()
     writer = csv.writer(output)
-
-    # Write headers
     writer.writerow(data.keys())
-
-    # Write data
     writer.writerow(data.values())
-
     return output.getvalue()
 
 def get_all_descriptors():
-
     all_descriptors = {
         'chem': {name: func for name, func in inspect.getmembers(Descriptors, inspect.isfunction) if filter_method(name)},
         'lipinski': {name: func for name, func in inspect.getmembers(Lipinski, inspect.isfunction) if filter_method(name)},
@@ -95,90 +132,79 @@ def get_all_descriptors():
     }
 
     # Manually added methods
-    # For freeSASA
     all_descriptors['rdfreesasa']["FreeSASA"] = "FreeSASA"
-    
 
     return all_descriptors
 
-### Checks if the mtehod contains name of methods that dont work. Manual tests
 def filter_method(name):
-        not_working_methods = ["rundoctest", "auto", 'namedtuple', 'setdescriptordersion', '_init', '_readpatts', 'ads', 'AtomPairsParameters', 'CalcChiNn', 'CalcChiNv', 'CustomProp_VSA_', 'GetAtomFeatures', 'GetAtomPairAtomCode', 'GetAtomPairCode', 'GetHashedMorganFingerprint', 'GetMorganFingerprint', 'GetUSR', 'MakePropertyRangeQuery', 'NumRotatableBondsOptions', 'Properties', 'PropertyFunctor', 'PropertyRangeQuery']
-        #not_working_methods = []
-        for not_working in not_working_methods:
-            if not_working.lower() in name.lower():
-                return False
-        return True
-
+    not_working_methods = [
+        "rundoctest", "auto", 'namedtuple', 'setdescriptordersion', '_init', '_readpatts', 
+        'ads', 'AtomPairsParameters', 'CalcChiNn', 'CalcChiNv', 'CustomProp_VSA_', 
+        'GetAtomFeatures', 'GetAtomPairAtomCode', 'GetAtomPairCode', 
+        'GetHashedMorganFingerprint', 'GetMorganFingerprint', 'GetUSR', 
+        'MakePropertyRangeQuery', 'NumRotatableBondsOptions', 'Properties', 
+        'PropertyFunctor', 'PropertyRangeQuery'
+    ]
+    for not_working in not_working_methods:
+        if not_working.lower() in name.lower():
+            return False
+    return True
 
 all_descriptors = get_all_descriptors()
-
-
 
 def compute_descriptors(smiles, selected_options):
     molecule = Chem.MolFromSmiles(smiles)
     descriptors = {}
-    img_str = None  # Initialize img_str here
+    img_str = None
 
     if molecule is not None:
         descriptors['SMILES'] = smiles
         for option in selected_options:
-            if option in all_descriptors['chem']:
-                descriptors[option] = all_descriptors['chem'][option](molecule)
-            elif option in all_descriptors['lipinski']:
-                descriptors[option] = all_descriptors['lipinski'][option](molecule)
-            elif option in all_descriptors['crippen']:
-                descriptors[option] = all_descriptors['crippen'][option](molecule)
-            elif option in all_descriptors['qed']:
-                descriptors[option] = all_descriptors['qed'][option](molecule)
-            elif option in all_descriptors['rdfreesasa']:
-                descriptors[option] = all_descriptors['rdfreesasa'][option](molecule)
-            elif option in all_descriptors['descriptor3d']:
+            method_name = option
+            if method_name in all_descriptors['chem']:
+                descriptors[method_name] = all_descriptors['chem'][method_name](molecule)
+            elif method_name in all_descriptors['lipinski']:
+                descriptors[method_name] = all_descriptors['lipinski'][method_name](molecule)
+            elif method_name in all_descriptors['crippen']:
+                descriptors[method_name] = all_descriptors['crippen'][method_name](molecule)
+            elif method_name in all_descriptors['qed']:
+                descriptors[method_name] = all_descriptors['qed'][method_name](molecule)
+            elif method_name in all_descriptors['rdfreesasa']:
+                descriptors[method_name] = all_descriptors['rdfreesasa'][method_name](molecule)
+            elif method_name in all_descriptors['descriptor3d']:
                 AllChem.EmbedMolecule(molecule, AllChem.ETKDG())
-                descriptors[option] = all_descriptors['descriptor3d'][option](molecule)
-            elif option in all_descriptors['rdmoldescriptors']:
+                descriptors[method_name] = all_descriptors['descriptor3d'][method_name](molecule)
+            elif method_name in all_descriptors['rdmoldescriptors']:
                 AllChem.EmbedMolecule(molecule, AllChem.ETKDG())
-                descriptors[option] = all_descriptors['rdmoldescriptors'][option](molecule)
-            
+                descriptors[method_name] = all_descriptors['rdmoldescriptors'][method_name](molecule)
 
-            if 'Image' in selected_options:
-                img = Draw.MolToImage(molecule)
-                buffered = BytesIO()
-                img.save(buffered, format="PNG")
-                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-                descriptors['Image'] = img_str
-            if 'FreeSASA' in selected_options:
-                # 1. Generate 3D coordinates for the molecule
-                AllChem.EmbedMolecule(molecule, AllChem.ETKDG())
-
-                # 2. Classify atoms and get radii
-                radii = rdFreeSASA.classifyAtoms(molecule)
-
-                # 3. Define SASA options: Using ShrakeRupley algorithm and OONS classifier as an example
-                sasa_opts = rdFreeSASA.SASAOpts(rdFreeSASA.SASAAlgorithm.ShrakeRupley, rdFreeSASA.SASAClassifier.OONS)
-
-                # 4. Compute the SASA and store in descriptors dictionary
-                descriptors['FreeSASA'] = rdFreeSASA.CalcSASA(molecule, radii, confIdx=-1, opts=sasa_opts)
+        if 'Image' in selected_options:
+            img = Draw.MolToImage(molecule)
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            descriptors['Image'] = img_str
+        if 'FreeSASA' in selected_options:
+            AllChem.EmbedMolecule(molecule, AllChem.ETKDG())
+            radii = rdFreeSASA.classifyAtoms(molecule)
+            sasa_opts = rdFreeSASA.SASAOpts(rdFreeSASA.SASAAlgorithm.ShrakeRupley, rdFreeSASA.SASAClassifier.OONS)
+            descriptors['FreeSASA'] = rdFreeSASA.CalcSASA(molecule, radii, confIdx=-1, opts=sasa_opts)
     else:
         descriptors['Error'] = f"Invalid SMILES: {smiles}"
 
     return descriptors, img_str
 
-
 def get_atom_counts(molecule):
     atom_counts = OrderedDict()
-    # Convert implicit hydrogens to explicit ones
     mol_with_hydrogens = Chem.AddHs(molecule)
     for atom in mol_with_hydrogens.GetAtoms():
         symbol = atom.GetSymbol()
-        key = "Number of "+symbol+" atoms"
+        key = "Number of " + symbol + " atoms"
         atom_counts[key] = atom_counts.get(key, 0) + 1
     
     atom_counts["Number of atoms total:"] = sum(atom_counts.values())
     
     return atom_counts
-
-
 
 @app.route('/feedback')
 def feedback():
@@ -196,12 +222,8 @@ def draw():
 def about():
     return render_template('about.html')
 
-
-
-
 @app.route('/editor')
 def editor():
-    # Get the directory of the current script
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file_path = os.path.join(dir_path, 'frontend', 'editor.html')
 
@@ -213,56 +235,40 @@ def editor():
 def editor_resources(filename):
     return send_from_directory('frontend/gui', filename)
 
-
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
-    
-    # Fetching the selected options again
     selected_options = request.form.getlist('displayOptions')
-
-    # Get the checkbox state for excluding invalid SMILES
     exclude_invalid = request.form.get('excludeInvalid') == 'true'
     
     smiles_input = request.form.get('inputField', '')
     smiles_list = [s.strip() for s in smiles_input.split(',')]
 
-    # Exclude invalid SMILES if checkbox is checked
     if exclude_invalid:
         smiles_list = [smiles for smiles in smiles_list if Chem.MolFromSmiles(smiles) is not None]
     
     output = StringIO()
     writer = csv.writer(output)
 
-    # Get the RDKit version
     rdkit_version = rdBase.rdkitVersion
 
-    # Get all descriptors for all molecules
     all_descriptors = [compute_descriptors(smiles, selected_options)[0] for smiles in smiles_list]
 
-    # Find the complete set of descriptor keys
     all_keys = set()
     for desc in all_descriptors:
         all_keys.update(desc.keys())
 
-    # Remove the 'Image' descriptor key if it's present and 'SMILES' key
     all_keys.discard('Image')
     all_keys.discard('SMILES')
 
-    # Convert set to a list to maintain order
     all_keys = sorted(list(all_keys))
 
-    # Order the atom count columns (assuming they start with "Number of")
     atom_columns = sorted([key for key in all_keys if key.startswith("Number of")])
     
-    # Create the final list of columns ensuring SMILES is first and atom columns are in order
     other_keys = [key for key in all_keys if key not in atom_columns and key != 'Error']
     ordered_keys = ['SMILES'] + atom_columns + other_keys + (['Error'] if 'Error' in all_keys else [])
 
-
-    # Write the headers
     writer.writerow(ordered_keys)
 
-    # Write data for each molecule
     for desc in all_descriptors:
         writer.writerow([desc.get(key, '') for key in ordered_keys])
 

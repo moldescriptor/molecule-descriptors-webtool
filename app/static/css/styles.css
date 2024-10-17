@@ -342,7 +342,7 @@ input[type="text"] {
 }
 
 /* Hide the actual file input */
-#csvFile {
+#csvFileUpload {
     display: none;
 }
 

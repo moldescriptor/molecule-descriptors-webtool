@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
+    const selectedDescriptors = new Set();
 
     window.showTab = function showTab(event, tabId) {
         var contents = document.querySelectorAll(".tab-content");
@@ -31,21 +32,41 @@ document.addEventListener("DOMContentLoaded", function () {
         var checkboxes = document.querySelectorAll('#common-descriptors .checkbox-container input[type="checkbox"]');
 
         if (selectAllButton.innerHTML === "Select All") {
-            checkboxes.forEach(cb => cb.checked = true);
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+                selectedDescriptors.add(cb.value);
+            });
             selectAllButton.innerHTML = "Deselect All";
         } else {
-            checkboxes.forEach(cb => cb.checked = false);
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                selectedDescriptors.delete(cb.value);
+            });
             selectAllButton.innerHTML = "Select All";
         }
+
+        updateSearchResultCheckboxes();
+    }
+
+    function updateSearchResultCheckboxes() {
+        var searchCheckboxes = document.querySelectorAll('#searchResults input[type="checkbox"]');
+        searchCheckboxes.forEach(function (sCheckbox) {
+            if (selectedDescriptors.has(sCheckbox.value)) {
+                sCheckbox.checked = true;
+            } else {
+                sCheckbox.checked = false;
+            }
+        });
     }
 
     function filterDescriptors() {
         var input = document.getElementById("searchBar");
         var filter = input.value.toLowerCase().trim();
         var searchResults = document.getElementById("searchResults");
-        searchResults.innerHTML = "";
+        searchResults.innerHTML = "";  // Clear previous search results
 
-        if (!filter) return;
+        if (!filter) return;  // If no input, return
+
         var addedDescriptors = new Set();
 
         for (var descriptor in descriptorsAndSynonyms) {
@@ -66,6 +87,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     inputCheckbox.type = "checkbox";
                     inputCheckbox.name = "displayOptions";
                     inputCheckbox.value = descriptor;
+                    
+                    if (selectedDescriptors.has(descriptor)) {
+                        inputCheckbox.checked = true;
+                    }
+
                     label.appendChild(inputCheckbox);
 
                     var displayTerm = allTerms[i];
@@ -75,19 +101,19 @@ document.addEventListener("DOMContentLoaded", function () {
                         label.appendChild(document.createTextNode(" " + descriptor + " (" + displayTerm + ")"));
                     }
 
-                    var mainCheckbox = document.querySelector(
-                        '.tab-content:not(#search-tab) .checkbox-container input[value="' + descriptor + '"]'
-                    );
-                    if (mainCheckbox) {
-                        inputCheckbox.checked = mainCheckbox.checked;
-                    }
-
                     inputCheckbox.addEventListener("change", function (e) {
+                        var value = this.value;
+                        if (this.checked) {
+                            selectedDescriptors.add(value);
+                        } else {
+                            selectedDescriptors.delete(value);
+                        }
+
                         var mainCheckbox = document.querySelector(
-                            '.tab-content:not(#search-tab) .checkbox-container input[value="' + this.value + '"]'
+                            '.tab-content:not(#search-tab) .checkbox-container input[value="' + value + '"]'
                         );
                         if (mainCheckbox) {
-                            mainCheckbox.checked = e.target.checked;
+                            mainCheckbox.checked = this.checked;
                         }
                     });
 
@@ -96,6 +122,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         }
+
+        updateSearchResultCheckboxes();
     }
 
     window.jsmeOnLoad = function () {
@@ -128,7 +156,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var searchBar = document.getElementById("searchBar");
     if (searchBar) {
-        searchBar.addEventListener("keyup", filterDescriptors);
+        let debounceTimeout;
+        searchBar.addEventListener("keyup", function () {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(filterDescriptors, 300);  // 300ms delay
+        });
     }
 
     document.querySelectorAll('.tab').forEach(function (tab) {

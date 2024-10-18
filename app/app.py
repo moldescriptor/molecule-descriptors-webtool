@@ -4,7 +4,6 @@ from rdkit.Chem import Draw, Descriptors, Crippen, QED, rdFreeSASA, AllChem, Lip
 from collections import OrderedDict
 from io import StringIO
 import csv
-from rdkit.Chem.AtomPairs import Pairs, Sheridan, Torsions, Utils
 import re
 import inspect
 from io import BytesIO
@@ -30,8 +29,10 @@ def load_descriptor_synonyms(file_name="descriptor_synonyms.csv"):
             descriptor = row['Descriptor'].strip()
             synonyms = [row[f'Synonym {i}'].strip() for i in range(1, 6) if row.get(f'Synonym {i}')]
             synonyms = [syn for syn in synonyms if syn]
-            if synonyms:
-                descriptor_synonyms[descriptor] = synonyms
+            
+            # **Always add the descriptor, even if synonyms are empty**
+            descriptor_synonyms[descriptor] = synonyms
+            
             for synonym in synonyms:
                 synonym_lower = synonym.lower()
                 synonym_map[synonym_lower] = descriptor
@@ -39,6 +40,7 @@ def load_descriptor_synonyms(file_name="descriptor_synonyms.csv"):
             synonym_map[descriptor_lower] = descriptor
     return synonym_map, descriptor_synonyms
 
+# **Initialize synonym_map and descriptor_synonyms globally**
 synonym_map, descriptor_synonyms = load_descriptor_synonyms()
 
 @app.route('/')

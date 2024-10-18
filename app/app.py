@@ -130,7 +130,7 @@ def get_all_descriptors():
         'qed': {name: func for name, func in inspect.getmembers(QED, inspect.isfunction) if filter_method(name)},
         'rdfreesasa': {name: func for name, func in inspect.getmembers(rdFreeSASA, inspect.isfunction) if filter_method(name)},
         'descriptor3d': {name: func for name, func in inspect.getmembers(Descriptors3D, inspect.isfunction) if filter_method(name)},
-        'rdmoldescriptors': {name: func for name, func in inspect.getmembers(rdMolDescriptors, callable) if filter_method(name)}
+        'rdmoldescriptors': {name: func for name, func in inspect.getmembers(rdMolDescriptors, callable) if filter_method(name) and name != 'CalcMolDescriptors'}
     }
 
     # Manually added methods
@@ -161,6 +161,13 @@ def compute_descriptors(smiles, selected_options):
 
     if molecule is not None:
         descriptors['SMILES'] = smiles
+
+        if 'CalcMolDescriptors' in selected_options:
+            full_descriptors = Descriptors.CalcMolDescriptors(molecule)
+            for key, value in full_descriptors.items():
+                descriptors[key] = value
+            selected_options = [opt for opt in selected_options if opt != 'CalcMolDescriptors']
+        
         for option in selected_options:
             method_name = option
             if method_name in all_descriptors['chem']:

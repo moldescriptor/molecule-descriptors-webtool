@@ -5,7 +5,6 @@
 The goal of this project is to utilize RDKit to calculate descriptors and make them easily accessible to users. The descriptors are organized into tabs based on the RDKit modules they belong to. Users can also search for specific descriptors using the search tab. The descriptors are calculated using RDKit and displayed in a table on the website. The end goal is making life easier for people with a chemical background who want to calculate descriptors for their molecules, without having to worry about learning Python. 
 
 
-
 ## Features
 
 - SMILES Input: Directly type in or paste the SMILES notation for your molecule.
@@ -43,6 +42,10 @@ For example, if you have a CSS file to style your web application, you would pla
 - ```/templates```
 This directory is used to store HTML templates. Flask uses a templating engine called Jinja2 that allows you to embed Python code within HTML files. This is how dynamic content is rendered.
 For example, if you want to display the molecular descriptors in an HTML page, you'd have an HTML template in the templates directory that Flask fills with the appropriate data before sending it to the client.
+
+## Documentation
+
+Please visit the [documentation repo](https://github.com/moldescriptor/moldescriptor-docs) for documentation source material
 
 - The ```config.py``` file is where you store configuration settings for your Flask app.
 

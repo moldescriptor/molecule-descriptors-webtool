@@ -184,4 +184,13 @@ document.addEventListener("DOMContentLoaded", function () {
         selectAllButton.addEventListener("click", toggleSelectDeselect);
     }
 
+    window.toggleTanimotoForm = function () {
+        var form = document.getElementById("tanimoto-form");
+        if (form.style.display === "none" || form.style.display === "") {
+            form.style.display = "block";  // Show the form
+        } else {
+            form.style.display = "none";   // Hide the form
+        }
+    };
+
 });

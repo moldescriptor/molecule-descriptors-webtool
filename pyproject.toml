@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "molecule-descriptors-webtool"
+version = "0.1.0"
+description = "a web tool for calculating molecular descriptors"
+authors = ["Your Name <you@example.com>"]
+license = "Apache"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+flask = "^3.0.3"
+rdkit = "^2024.3.5"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.7.0"
+pytest = "^7.0"  # Testing framework
+black = "^22.0"  # Code formatter
+isort = "^5.0"  # Import sorting
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

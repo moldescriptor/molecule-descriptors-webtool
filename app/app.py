@@ -145,10 +145,12 @@ def filter_method(name):
         'GetAtomFeatures', 'GetAtomPairAtomCode', 'GetAtomPairCode', 
         'GetHashedMorganFingerprint', 'GetMorganFingerprint', 'GetUSR', 
         'MakePropertyRangeQuery', 'NumRotatableBondsOptions', 'Properties', 
-        'PropertyFunctor', 'PropertyRangeQuery'
+        'PropertyFunctor', 'PropertyRangeQuery',
     ]
     for not_working in not_working_methods:
         if not_working.lower() in name.lower():
+            return False
+        elif name[0] == "_":
             return False
     return True
 

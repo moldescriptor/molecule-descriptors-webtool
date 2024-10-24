@@ -5,6 +5,36 @@
 The goal of this project is to utilize RDKit to calculate descriptors and make them easily accessible to users. The descriptors are organized into tabs based on the RDKit modules they belong to. Users can also search for specific descriptors using the search tab. The descriptors are calculated using RDKit and displayed in a table on the website. The end goal is making life easier for people with a chemical background who want to calculate descriptors for their molecules, without having to worry about learning Python. 
 
 
+
+## Running the Project
+Install the dependencies using Poetry:
+
+```bash
+poetry install
+```
+To run the application:
+```bash
+poetry run python run.py
+```
+
+#### Linting with Ruff
+This project uses Ruff for linting Python code. To ensure good coding practices, run the following command:
+
+```bash
+poetry run ruff check .
+```
+
+To auto-fix and format code:
+```bash
+poetry run ruff check --fix .
+```
+
+Update lock file:
+```bash
+poetry lock
+```
+
+
 ## Features
 
 - SMILES Input: Directly type in or paste the SMILES notation for your molecule.

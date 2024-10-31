@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_from_directory, render_template_string, Response, send_file
+from flask import Flask, render_template, request, send_from_directory, render_template_string, Response
 from rdkit import Chem, rdBase
 import json
 import os
@@ -151,7 +151,7 @@ def download_tanimoto_csv():
     return Response(
         csv_data,
         mimetype="text/csv",
-        headers={"Content-disposition": f"attachment; filename=tanimoto_scores.csv"}
+        headers={"Content-disposition": "attachment; filename=tanimoto_scores.csv"}
     )
 
 if __name__ == '__main__':

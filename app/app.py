@@ -132,7 +132,7 @@ def download_csv():
     
     all_descriptors = [compute_descriptors(smiles, selected_options)[0] for smiles in smiles_list]
     csv_data = generate_csv_data(all_descriptors, exclude_keys=['Image', 'SMILES'])
-
+    
     return Response(
         csv_data,
         mimetype="text/csv",

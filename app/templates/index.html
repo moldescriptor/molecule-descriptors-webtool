@@ -243,27 +243,31 @@
 
         <!-- Conditionally display the Download CSV button -->
         {% if result_available %}
-        <div
-            class="download-csv-container"
-            style="text-align: center; margin-top: 20px"
-        >
+        <div class="download-csv-container" style="text-align: center; margin-top: 20px">
             <form action="/download_csv" method="post">
                 <input
                     type="hidden"
                     name="inputField"
-                    value="{{ request.form['inputField'] }}"
+                    value="{{ request.form.get('inputField', '') }}"
                 />
+        
                 <input
-                    type="submit"
-                    value="Download CSV"
-                    class="draw-button"
+                    type="hidden"
+                    name="excludeInvalid"
+                    value="{{ 'true' if request.form.get('excludeInvalid') == 'true' else 'false' }}"
                 />
+        
+                {% for option in request.form.getlist('displayOptions') %}
+                    <input type="hidden" name="displayOptions" value="{{ option }}">
+                {% endfor %}
+        
+                <input type="submit" value="Download CSV" class="draw-button" />
             </form>
         </div>
-        {% endif %}
+        {% endif %}        
         {% endif %}
         {% if error %}
-        <div class="error-message">{{ error }}</div>
+            <div class="error-message">{{ error }}</div>
         {% endif %}
 
         <!-- Display Tanimoto similarity scores if present -->

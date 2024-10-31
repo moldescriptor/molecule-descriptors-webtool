@@ -1,4 +1,3 @@
-import os
 from io import BytesIO
 from app.descriptors import get_all_descriptors, compute_descriptors
 

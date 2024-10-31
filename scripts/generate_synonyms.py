@@ -1,9 +1,9 @@
 import os
 import csv
 import sys
+from app.app import get_all_descriptors
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app.app import get_all_descriptors
 
 def save_descriptor_names_to_csv(file_name="descriptor_synonyms_empty.csv"):
     all_descriptors = get_all_descriptors()

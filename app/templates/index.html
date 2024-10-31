@@ -71,6 +71,10 @@
                 >
                     Draw Molecules
                 </button>
+                <label class="tanimoto-label">
+                    <input type="checkbox" name="calculateTanimoto" value="true" />
+                    Calculate Tanimoto Similarity
+                </label>
             </div>
 
             <div
@@ -261,6 +265,39 @@
         {% if error %}
         <div class="error-message">{{ error }}</div>
         {% endif %}
+
+        <!-- Display Tanimoto similarity scores if present -->
+        {% if tanimoto_scores %}
+        <h2>Tanimoto Similarity Scores:</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Template SMILES</th>
+                    <th>Comparison SMILES</th>
+                    <th>Tanimoto Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in tanimoto_scores %}
+                <tr>
+                    <td>{{ item.template_smile }}</td>
+                    <td>{{ item.comparison_smile }}</td>
+                    <td>{{ item.tanimoto_score }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}" class="refreshButton">Clear</a>
+
+        <!-- Download CSV button for Tanimoto scores -->
+        <div class="download-csv-container" style="text-align: center; margin-top: 20px">
+            <form action="/download_tanimoto_csv" method="post">
+                <input type="hidden" name="tanimoto_scores" value='{{ tanimoto_scores | tojson }}' />
+                <input type="submit" value="Download CSV" class="draw-button" />
+            </form>
+        </div>
+        {% endif %}
+
     </div>
     <div class="rdkit-badge">
         <a href="https://www.rdkit.org/">

@@ -39,23 +39,56 @@ def identify_molecule():
 
     final_selected_options = process_selected_options(selected_options, synonym_map)
     exclude_invalid = request.form.get('excludeInvalid') == 'true'
+    calculate_tanimoto = 'calculateTanimoto' in request.form
 
-    smiles_list, error = get_smiles_list(request, exclude_invalid)
-    if error:
-        descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
-        return render_template('index.html', 
-                               error=error,
-                               all_descriptors=global_descriptors,
-                               descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
+    smiles_input = request.form.get('inputField', '')
 
-    computed_descriptors = [compute_descriptors(smiles, final_selected_options)[0] for smiles in smiles_list]
     descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
 
-    return render_template('index.html', 
-                           descriptors_list=computed_descriptors, 
-                           all_descriptors=global_descriptors, 
-                           descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
-                           result_available=True)
+    if calculate_tanimoto:
+        if '||' not in smiles_input:
+            error = "Please separate template and comparison SMILES strings using '||'."
+            return render_template('index.html', 
+                                   error=error,
+                                   all_descriptors=global_descriptors,
+                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
+        template_str, comparison_str = smiles_input.split('||', 1)
+        template_smiles = [s.strip() for s in template_str.strip().split(',')]
+        comparison_smiles = [s.strip() for s in comparison_str.strip().split(',')]
+
+        tanimoto_scores = calculate_tanimoto_similarity(template_smiles, comparison_smiles)
+        
+        print("Form Data:", request.form)
+        print("calculate_tanimoto:", calculate_tanimoto)
+        print("exclude_invalid:", exclude_invalid)
+
+        if not tanimoto_scores:
+            error = "No valid SMILES strings or no Tanimoto scores calculated."
+            return render_template('index.html', 
+                                   error=error,
+                                   all_descriptors=global_descriptors,
+                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
+
+        return render_template('index.html', 
+                               tanimoto_scores=tanimoto_scores, 
+                               all_descriptors=global_descriptors, 
+                               descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
+                               result_available=True)
+    else:
+        smiles_list, error = get_smiles_list(request, exclude_invalid)
+        if error:
+            return render_template('index.html', 
+                                   error=error,
+                                   all_descriptors=global_descriptors,
+                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
+
+        computed_descriptors = [compute_descriptors(smiles, final_selected_options)[0] for smiles in smiles_list]
+
+        return render_template('index.html', 
+                               descriptors_list=computed_descriptors, 
+                               all_descriptors=global_descriptors, 
+                               descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
+                               result_available=True)
 
 @app.route('/feedback')
 def feedback():
@@ -106,20 +139,20 @@ def download_csv():
         headers={"Content-disposition": f"attachment; filename=data_RDKit_{rdBase.rdkitVersion}.csv"}
     )
 
-@app.route('/tanimoto', methods=['POST'])
-def tanimoto_similarity():
-    template_smiles = request.form['template_smiles'].split()
-    comparison_smiles = request.form['comparison_smiles'].split()
+@app.route('/download_tanimoto_csv', methods=['POST'])
+def download_tanimoto_csv():
+    tanimoto_scores_json = request.form.get('tanimoto_scores')
+    tanimoto_scores = json.loads(tanimoto_scores_json)
 
-    # Calculate Tanimoto similarity and generate CSV files
-    csv_files = calculate_tanimoto_similarity(template_smiles, comparison_smiles)
+    csv_data = "Template SMILES,Comparison SMILES,Tanimoto Score\n"
+    for item in tanimoto_scores:
+        csv_data += f"{item['template_smile']},{item['comparison_smile']},{item['tanimoto_score']}\n"
 
-    if not csv_files:
-        return "No valid SMILES strings or no Tanimoto scores calculated.", 400
-
-    # Use absolute path to the CSV file
-    return send_file(os.path.abspath(csv_files[0]), as_attachment=True, download_name="tanimoto_scores.csv")
-
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-disposition": f"attachment; filename=tanimoto_scores.csv"}
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

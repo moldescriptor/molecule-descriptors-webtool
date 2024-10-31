@@ -153,10 +153,6 @@ label {
     margin-bottom: 10px;
 }
 
-.button-group {
-    margin-top: 20px;
-}
-
 input[type="submit"] {
     background-color: #ffa500;
     color: #fff;
@@ -303,23 +299,6 @@ input[type="text"] {
     margin-right: 10px; /* Space between the input field and the submit button */
 }
 
-.button-group > * {
-    background-color: #ffa500;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    line-height: normal;
-    margin-right: 10px; /* Space between buttons */
-    text-align: center;
-}
-
-.button-group > *:hover {
-    background-color: #e69500;
-}
-
 /* Styling for the label used as the 'Upload CSV' button */
 .file-upload-label {
     display: inline-flex;
@@ -368,4 +347,54 @@ input[type="text"] {
 
 .draw-button, .draw-button-active {
     width: 170px; /* Set a fixed width -> Temporary change so that the button has the same width when pressed */
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.button-group > * {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffa500;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+}
+
+.button-group > *:hover {
+    background-color: #e69500;
+}
+
+.button-group input[type="file"] {
+    display: none;
+}
+
+.button-group input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.button-group label {
+    display: inline-flex;
+    align-items: center;
+}
+
+.draw-button, .draw-button-active {
+    width: auto;
+}
+
+.button-group button,
+.button-group label {
+    margin-top: 0;
+    margin-bottom: 0;
 }

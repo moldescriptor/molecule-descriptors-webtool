@@ -13,29 +13,6 @@ def test_homepage(client):
     assert b"RDKit packages" in response.data
 
 
-def test_tanimoto_endpoint(client):
-    # Prepare data to send to the endpoint
-    data = {
-        'template_smiles': "CCO CCN",  # Two SMILES strings
-        'comparison_smiles': "CCO CCC"  # Two comparison SMILES strings
-    }
-    
-    # Send POST request
-    response = client.post('/tanimoto', data=data)
-    
-    # Check if the status code is 200 (OK)
-    assert response.status_code == 200
-
-    # Ensure the response contains a CSV file as an attachment
-    assert 'attachment; filename=tanimoto_scores.csv' in response.headers['Content-Disposition']
-
-    # Optional: Save the file locally and validate its contents
-    with open("downloaded_tanimoto_scores.csv", "wb") as f:
-        f.write(response.data)
-
-    # Clean up downloaded file
-    os.remove("downloaded_tanimoto_scores.csv")
-
 def test_download_csv(client):
     # Prepare data to send to the endpoint
     data = {

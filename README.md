@@ -5,16 +5,13 @@
 The goal of this project is to utilize RDKit to calculate descriptors and make them easily accessible to users. The descriptors are organized into tabs based on the RDKit modules they belong to. Users can also search for specific descriptors using the search tab. The descriptors are calculated using RDKit and displayed in a table on the website. The end goal is making life easier for people with a chemical background who want to calculate descriptors for their molecules, without having to worry about learning Python. 
 
 
+### Dependencies
+We are using Poetry for dependency management. You can find the documentation for poetry [here](https://python-poetry.org/docs/).
 
-## Running the Project
 Install the dependencies using Poetry:
 
 ```bash
 poetry install
-```
-To run the application:
-```bash
-poetry run python run.py
 ```
 
 #### Linting with Ruff
@@ -34,7 +31,6 @@ Update lock file:
 poetry lock
 ```
 
-
 ## Features
 
 - SMILES Input: Directly type in or paste the SMILES notation for your molecule.
@@ -43,7 +39,7 @@ poetry lock
 - Result Visualization: View the computed descriptor values and the visual representation of the molecule.
 - CSV Support: Upload a CSV containing multiple molecules to get descriptors for all at once or download results in CSV format.
 
-## How to use MolDescriptor
+# How to use MolDescriptor
 You can find an in depth tutorial on how to use MolDescriptor [here.](https://moldescriptor.github.io/moldescriptor-docs/)
 
 ## Getting Started
@@ -54,10 +50,21 @@ You can find an in depth tutorial on how to use MolDescriptor [here.](https://mo
 5. Click on "Get Result" to compute and display the descriptors.
 6. (Optional) Upload a CSV file containing SMILES notations for batch processing or download your results as a CSV.
 
-## Dependencies
-- Backend: Flask
-- Chemistry Toolkit: RDKit
-- Frontend: HTML, CSS, and JavaScript
+## Running MolDescriptor locally
+
+To run MolDescriptor on your local machine, follow these steps:
+
+1. **Clone the repository**
+
+2. **Install dependencies using Poetry**:
+    ```bash
+    poetry install
+    ```
+
+3. **Run the application**:
+- You can start MolDescriptor by executing the `run.py` script.
+
+This will start the Flask application, and you can access it by navigating to `http://127.0.0.1:5000` in your web browser.
 
 ## The contents of the project
 

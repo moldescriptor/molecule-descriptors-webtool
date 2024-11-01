@@ -7,9 +7,10 @@ license = "Apache"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12.7,<3.13"
 flask = "^3.0.3"
 rdkit = "^2024.3.5"
+pandas = "^2.2.3"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.7.0"

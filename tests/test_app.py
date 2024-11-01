@@ -1,5 +1,6 @@
 from io import BytesIO
 from app.descriptors import get_all_descriptors, compute_descriptors
+import json
 
 def test_homepage(client):
     response = client.get('/')
@@ -13,26 +14,37 @@ def test_homepage(client):
 
 
 def test_download_csv(client):
-    # Prepare data to send to the endpoint
+    # Prepare SMILES strings and options
+    smiles_list = ["CCO", "CCN"]
+    selected_options = ['MolWt', 'MolLogP']
+
+    # Compute the descriptors for the test SMILES
+    descriptors_list = []
+    for smiles in smiles_list:
+        descriptor = compute_descriptors(smiles, selected_options)[0]
+        if descriptor:
+            descriptor['Original_SMILES'] = smiles
+            descriptor['Charged'] = False
+            descriptors_list.append(descriptor)
+
+    descriptors_list_json = json.dumps(descriptors_list)
+
     data = {
-        'inputField': "CCO,CCN",  # SMILES strings
-        'displayOptions': ['MolWt', 'MolLogP'],  # Descriptors to include
-        'excludeInvalid': 'false'  # Don't exclude invalid SMILES
+        'descriptors_list': descriptors_list_json
     }
-    
-    # Send POST request
+
     response = client.post('/download_csv', data=data)
 
-    # Check if the status code is 200 (OK)
     assert response.status_code == 200
-
-    # Ensure the response contains a CSV file as an attachment
     assert 'attachment; filename=data_RDKit' in response.headers['Content-Disposition']
 
-    # Optional: Validate CSV content
     csv_content = response.data.decode('utf-8')
     assert "MolWt" in csv_content
     assert "MolLogP" in csv_content
+    assert "Original_SMILES" in csv_content
+    assert "SMILES" in csv_content
+    assert "CCO" in csv_content
+    assert "CCN" in csv_content
 
 def test_invalid_file_upload(client):
     data = {

@@ -38,7 +38,19 @@ def compute_descriptors(smiles, selected_options):
         for option in selected_options:
             descriptors['SMILES'] = smiles
             method_name = option
-            if method_name in all_descriptors['chem']:
+            if method_name == 'CalcMolDescriptors':
+                full_descriptors = Descriptors.CalcMolDescriptors(molecule)
+                for key, value in full_descriptors.items():
+                    descriptors[key] = value
+                continue
+            elif method_name == 'CalcMolDescriptors3D':
+                if molecule.GetNumConformers() == 0:
+                    AllChem.EmbedMolecule(molecule, AllChem.ETKDG())
+                full_descriptors = Descriptors3D.CalcMolDescriptors3D(molecule)
+                for key, value in full_descriptors.items():
+                    descriptors[key] = value
+                continue
+            elif method_name in all_descriptors['chem']:
                 descriptors[method_name] = all_descriptors['chem'][method_name](molecule)
             elif method_name in all_descriptors['lipinski']:
                 descriptors[method_name] = all_descriptors['lipinski'][method_name](molecule)

@@ -16,19 +16,10 @@ def get_rules():
     
     rules = []
     for idx, row in df_rules.iterrows():
-        rules.append([[row["smirks"]], row["type"], row["pka"], row["comment"], idx])
+        rules.append([[row["smirks"]], row["type"], row["pka"], idx])
     return rules
 
 def reformat_rules(rules):
-    """
-    Reformats the rules to replace certain SMILES notations with RDKit compatible ones.
-
-    Args:
-        rules: List of protonation/deprotonation rules.
-
-    Returns:
-        Reformatted list of rules.
-    """
     rule_counter = 0
     for rule in rules:
         trans_counter = 0
@@ -48,7 +39,6 @@ def reformat_rules(rules):
         rule_counter += 1
     return rules
 
-#--------------------------------------------
 def charge_molecules(
     input_data,
     ph=7.0,
@@ -57,20 +47,6 @@ def charge_molecules(
     code=None,
     debug=False
 ):
-    """
-    Charges molecules based on the given pH and pH range.
-
-    Args:
-        input_data: SMILES string or list of SMILES strings. If is_string is False, input_data should be a file path.
-        ph: pH value to consider for protonation/deprotonation.
-        ph_range: pH range around the pH value.
-        is_string: Boolean indicating if input_data is a string or a file path.
-        code: Name of field with supplier ID (if applicable).
-        debug: Boolean indicating if debug information should be printed.
-
-    Returns:
-        List of charged SMILES strings.
-    """
     if not is_string:
         if not os.path.isfile(input_data):
             raise FileNotFoundError(f"File path not valid or file does not exist: {input_data}")
@@ -103,7 +79,7 @@ def charge_molecules(
 
     rules = get_rules()
 
-    reaction, type_idx, pka, comment = 0, 1, 2, 3
+    reaction, type_idx, pka = 0, 1, 2
     counter = 0
     for rule in rules:
         if rule[type_idx] == 'acid':
@@ -136,7 +112,7 @@ def charge_molecules(
     for mol in mol_list:
         try:
             frag_mol = Chem.GetMolFrags(mol, True, True)
-        except:
+        except Exception:
             print("Could not read molecule")
             continue
         if len(frag_mol) > 1:
@@ -154,12 +130,11 @@ def charge_molecules(
         for rule in rules:
             tmp_list = []
             for smiles in smiles_list:
-                old_smi = smiles
                 for transformation in rule[0]:
                     work_mol = Chem.MolFromSmiles(smiles)
                     try:
                         work_mol = Chem.rdmolops.AddHs(work_mol)
-                    except:
+                    except Exception:
                         print(f"Could not add hydrogen atoms, skipping {name}")
                         break
                     to_do_list = [work_mol]
@@ -170,7 +145,7 @@ def charge_molecules(
                             umr = rdChemReactions.ReactionFromSmarts(transformation)
                             try:
                                 product = umr.RunReactant(work_mol, 0)
-                            except:
+                            except Exception:
                                 work_mol = Chem.MolFromSmiles(smiles)
                                 if smiles not in tmp_list:
                                     tmp_list.append(smiles)
@@ -183,7 +158,7 @@ def charge_molecules(
                                     counter += 1
                                     try:
                                         Chem.SanitizeMol(prod)
-                                    except:
+                                    except Exception:
                                         if smiles not in tmp_list:
                                             tmp_list.append(smiles)
                                         continue

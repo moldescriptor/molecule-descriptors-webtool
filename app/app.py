@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, render_template_string, Response
-from rdkit import Chem, rdBase
+from rdkit import rdBase
 from collections import defaultdict
 import json
 import os

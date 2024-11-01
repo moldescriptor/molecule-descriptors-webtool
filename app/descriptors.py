@@ -35,8 +35,8 @@ def compute_descriptors(smiles, selected_options):
     all_descriptors = get_all_descriptors()
 
     if molecule is not None:
-        descriptors['SMILES'] = smiles
         for option in selected_options:
+            descriptors['SMILES'] = smiles
             method_name = option
             if method_name in all_descriptors['chem']:
                 descriptors[method_name] = all_descriptors['chem'][method_name](molecule)

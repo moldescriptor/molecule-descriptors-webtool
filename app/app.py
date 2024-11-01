@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, send_from_directory, render_template_string, Response
 from rdkit import Chem, rdBase
+from collections import defaultdict
 import json
 import os
 
@@ -44,7 +45,7 @@ def identify_molecule():
     calculate_tanimoto = 'calculateTanimoto' in request.form
 
     charge_smiles = 'chargeSmiles' in request.form
-    charge_smiles_selected = charge_smiles  # Flag to indicate if charging is selected
+    charge_smiles_selected = charge_smiles
 
     ph_value = request.form.get('phValue', type=float)
     ph_range = request.form.get('phRange', type=float)
@@ -89,15 +90,15 @@ def identify_molecule():
                                    error=error,
                                    all_descriptors=global_descriptors,
                                    descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
-        # Compute descriptors for original SMILES
-        descriptors_list = []
-        for smiles in smiles_list:
-            descriptor = compute_descriptors(smiles, final_selected_options)[0]
-            if descriptor:  # Only add if descriptor is not empty
-                descriptors_list.append(descriptor)
 
+        smiles_info = {}
+        for smiles in smiles_list:
+            smiles_info[smiles] = {
+                'Original_SMILES': smiles,
+                'Charged': False
+            }
+        
         if charge_smiles:
-            # Process charged SMILES
             results = []
             for original_smiles in smiles_list:
                 try:
@@ -116,29 +117,41 @@ def identify_molecule():
                                            error=error,
                                            all_descriptors=global_descriptors,
                                            descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms))
-                # Remove duplicates
                 charged_smiles_list = list(set(charged_smiles_list))
+
+                for charged_smiles in charged_smiles_list:
+                    if charged_smiles not in smiles_info:
+                        smiles_info[charged_smiles] = {
+                            'Original_SMILES': original_smiles,
+                            'Charged': True
+                        }
 
                 results.append({
                     'Original_SMILES': original_smiles,
                     'Charged_SMILES_List': charged_smiles_list
                 })
-
-            return render_template('index.html', 
-                                   results=results,
-                                   descriptors_list=descriptors_list,
-                                   charge_smiles_selected=charge_smiles_selected,
-                                   all_descriptors=global_descriptors, 
-                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
-                                   result_available=True)
         else:
-            # Charging not selected
-            return render_template('index.html', 
-                                   descriptors_list=descriptors_list,
-                                   charge_smiles_selected=charge_smiles_selected,
-                                   all_descriptors=global_descriptors,
-                                   descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
-                                   result_available=True)
+            results = []
+
+        descriptors_list = []
+        for smiles, info in smiles_info.items():
+            descriptor = compute_descriptors(smiles, final_selected_options)[0]
+            if descriptor:
+                descriptor['Original_SMILES'] = info['Original_SMILES']
+                descriptor['Charged'] = info['Charged']
+                descriptors_list.append(descriptor)
+        grouped_descriptors = defaultdict(list)
+        for descriptor in descriptors_list:
+            original_smiles = descriptor['Original_SMILES']
+            grouped_descriptors[original_smiles].append(descriptor)
+
+        return render_template('index.html', 
+                               grouped_descriptors=grouped_descriptors,
+                               charge_smiles_selected=charge_smiles_selected,
+                               results=results,
+                               all_descriptors=global_descriptors, 
+                               descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
+                               result_available=True)
     
 @app.route('/feedback')
 def feedback():

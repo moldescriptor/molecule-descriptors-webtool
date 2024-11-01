@@ -251,37 +251,45 @@
             </table>
         {% endif %}
 
-        {% if descriptors_list %}
+        {% if grouped_descriptors %}
         <h2>Descriptors:</h2>
-        {% for descriptors in descriptors_list %}
-            <h3>SMILES: {{ descriptors['SMILES'] }}</h3>
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>Descriptor</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for key, value in descriptors.items() %}
-                        {% if key != 'SMILES' %}
-                            <tr>
-                                <td>{{ key }}</td>
-                                <td>
-                                    {% if key == "Image" %}
-                                        <img src="data:image/png;base64,{{ value }}" alt="Molecule Image" width="200" />
-                                    {% else %}
-                                        {{ value }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
+        {% for original_smiles, descriptors_group in grouped_descriptors.items() %}
+            <h3>Original SMILES: {{ original_smiles }}</h3>
+            {% for descriptors in descriptors_group %}
+                <h4>
+                    SMILES: {{ descriptors['SMILES'] }}
+                    {% if descriptors['Charged'] %}
+                        (Charged)
+                    {% endif %}
+                </h4>
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>Descriptor</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in descriptors.items() %}
+                            {% if key not in ['SMILES', 'Original_SMILES', 'Charged'] %}
+                                <tr>
+                                    <td>{{ key }}</td>
+                                    <td>
+                                        {% if key == "Image" %}
+                                            <img src="data:image/png;base64,{{ value }}" alt="Molecule Image" width="200" />
+                                        {% else %}
+                                            {{ value }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
         {% endfor %}
         <a href="{{ url_for('index') }}" class="refreshButton">Clear</a>
-    {% endif %}
+        {% endif %}
 
         {% if error %}
             <div class="error-message">{{ error }}</div>

@@ -146,12 +146,13 @@ def identify_molecule():
             grouped_descriptors[original_smiles].append(descriptor)
 
         return render_template('index.html', 
-                               grouped_descriptors=grouped_descriptors,
-                               charge_smiles_selected=charge_smiles_selected,
-                               results=results,
-                               all_descriptors=global_descriptors, 
-                               descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
-                               result_available=True)
+                            grouped_descriptors=grouped_descriptors,
+                            descriptors_list=descriptors_list,
+                            charge_smiles_selected=charge_smiles_selected,
+                            results=results,
+                            all_descriptors=global_descriptors, 
+                            descriptorsAndSynonyms=json.dumps(descriptorsAndSynonyms),
+                            result_available=True)
     
 @app.route('/feedback')
 def feedback():
@@ -184,18 +185,16 @@ def editor_resources(filename):
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
-    selected_options = request.form.getlist('displayOptions')
-    exclude_invalid = request.form.get('excludeInvalid') == 'true'
-    
-    smiles_input = request.form.get('inputField', '')
-    smiles_list = [s.strip() for s in smiles_input.split(',')]
+    descriptors_list_json = request.form.get('descriptors_list')
+    if not descriptors_list_json:
+        return "No descriptors data provided.", 400
+    try:
+        descriptors_list = json.loads(descriptors_list_json)
+    except json.JSONDecodeError:
+        return "Invalid descriptors data.", 400
 
-    if exclude_invalid:
-        smiles_list = [smiles for smiles in smiles_list if Chem.MolFromSmiles(smiles) is not None]
-    
-    all_descriptors = [compute_descriptors(smiles, selected_options)[0] for smiles in smiles_list]
-    csv_data = generate_csv_data(all_descriptors, exclude_keys=['Image', 'SMILES'])
-    
+    exclude_keys = ['Image']
+    csv_data = generate_csv_data(descriptors_list, exclude_keys=exclude_keys)
     return Response(
         csv_data,
         mimetype="text/csv",

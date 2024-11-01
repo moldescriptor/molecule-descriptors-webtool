@@ -288,9 +288,15 @@
                 </table>
             {% endfor %}
         {% endfor %}
+        <div class="download-csv-container" style="text-align: center; margin-top: 20px">
+            <form action="/download_csv" method="post">
+                <input type="hidden" name="descriptors_list" value='{{ descriptors_list | tojson }}' />
+                <input type="submit" value="Download CSV" class="draw-button" />
+            </form>
+        </div>
         <a href="{{ url_for('index') }}" class="refreshButton">Clear</a>
         {% endif %}
-
+        
         {% if error %}
             <div class="error-message">{{ error }}</div>
         {% endif %}

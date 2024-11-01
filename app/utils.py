@@ -76,10 +76,7 @@ def generate_csv_data(descriptors_list, exclude_keys):
     for key in exclude_keys:
         all_keys.discard(key)
 
-    all_keys = sorted(all_keys)
-    atom_columns = sorted([key for key in all_keys if key.startswith("Number of")])
-    other_keys = [key for key in all_keys if key not in atom_columns and key != 'Error']
-    ordered_keys = ['SMILES'] + atom_columns + other_keys + (['Error'] if 'Error' in all_keys else [])
+    ordered_keys = ['Original_SMILES', 'SMILES', 'Charged'] + sorted(all_keys - {'Original_SMILES', 'SMILES', 'Charged'})
 
     output = StringIO()
     writer = csv.writer(output)

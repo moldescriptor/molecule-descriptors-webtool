@@ -26,7 +26,10 @@ def filter_method(name):
         'MakePropertyRangeQuery', 'NumRotatableBondsOptions', 'Properties', 
         'PropertyFunctor', 'PropertyRangeQuery'
     ]
-    return not any(nm in name.lower() for nm in not_working_methods)
+    if name[0] == "_":
+        return False
+    filtered_descriptors = not any(nm in name.lower() for nm in not_working_methods)
+    return filtered_descriptors
 
 def compute_descriptors(smiles, selected_options):
     molecule = Chem.MolFromSmiles(smiles)

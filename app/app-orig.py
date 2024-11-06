@@ -81,7 +81,7 @@ def identify_molecule():
     file = request.files.get('csvFile')
     if file and file.filename != '':
         if not file.filename.endswith('.csv'):
-            all_descriptors = get_all_descriptors()
+            get_all_descriptors()
             descriptorsAndSynonyms = build_descriptors_and_synonyms(descriptor_synonyms)
             return render_template('index.html', 
                                    error="Invalid file type! Please upload a .csv file.",
